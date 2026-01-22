@@ -1,0 +1,1565 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>空壳之国 · 轻量互动版</title>
+  <style>
+    :root{
+      --bg0:#070812;
+      --bg1:#0a1022;
+      --card:#0c1020cc;
+      --card2:#0f1732cc;
+      --stroke:#2c3a7a55;
+      --text:#eaf0ff;
+      --muted:#aab7e6;
+      --danger:#ff4d6d;
+      --ok:#41f3a3;
+      --warn:#ffd36a;
+      --cyan:#4ee7ff;
+      --vio:#b48cff;
+      --pink:#ff66cc;
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --glow: 0 0 22px rgba(78,231,255,.25);
+      --radius: 18px;
+      --ch: 190; /* hue helper */
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif;
+      background:
+        radial-gradient(900px 600px at 12% 18%, rgba(78,231,255,.14), transparent 62%),
+        radial-gradient(900px 600px at 82% 22%, rgba(180,140,255,.14), transparent 60%),
+        radial-gradient(900px 700px at 40% 88%, rgba(255,102,204,.08), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+    .noise:before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+      mix-blend-mode:overlay;
+      opacity:.14;
+    }
+
+    /* --- Starfield canvas --- */
+    #fxCanvas{
+      position:fixed; inset:0;
+      z-index:0;
+      pointer-events:none;
+      opacity:.9;
+      filter: saturate(1.05) contrast(1.05);
+    }
+
+    .wrap{max-width:1280px; margin:0 auto; padding:18px 18px 28px; position:relative; z-index:1;}
+    .topbar{
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      padding:14px 16px;
+      border:1px solid var(--stroke);
+      background:linear-gradient(180deg, rgba(20,26,56,.72), rgba(8,10,20,.55));
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(10px);
+      position:sticky; top:10px; z-index:9;
+    }
+    .brand{display:flex; gap:12px; align-items:center}
+    .logo{
+      width:40px; height:40px; border-radius:14px;
+      background: conic-gradient(from 210deg, rgba(78,231,255,.95), rgba(180,140,255,.9), rgba(255,102,204,.85), rgba(78,231,255,.95));
+      box-shadow: 0 0 0 1px rgba(255,255,255,.12), 0 10px 32px rgba(78,231,255,.14);
+      position:relative;
+      overflow:hidden;
+    }
+    .logo:after{
+      content:"";
+      position:absolute; inset:10px;
+      border-radius:10px;
+      background:linear-gradient(180deg, rgba(10,14,28,.9), rgba(5,6,12,.8));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+    .logo:before{
+      content:"";
+      position:absolute; inset:-30px;
+      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.25), transparent 55%);
+      transform: rotate(12deg);
+      animation: sheen 6.2s ease-in-out infinite;
+      opacity:.6;
+    }
+    @keyframes sheen{ 0%,100%{transform:translateX(-12px) rotate(10deg)} 50%{transform:translateX(18px) rotate(10deg)} }
+
+    .brand h1{margin:0; font-size:15px; letter-spacing:.5px}
+    .brand .sub{font-size:12px; color:var(--muted); margin-top:2px}
+    .pillrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    .pill{
+      display:flex; gap:8px; align-items:center;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(12,16,32,.5);
+      box-shadow:var(--glow);
+      font-size:12px; color:var(--muted);
+      user-select:none;
+    }
+    .pill b{color:var(--text); font-weight:650}
+    .grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:14px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+      .topbar{position:relative; top:0}
+      .pillrow{justify-content:flex-start}
+    }
+
+    .panel{
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      background:linear-gradient(180deg, rgba(20,26,56,.55), rgba(8,10,20,.35));
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+      position:relative;
+    }
+    .panel:before{
+      content:"";
+      position:absolute; inset:-1px;
+      pointer-events:none;
+      background: radial-gradient(800px 260px at 25% 0%, rgba(78,231,255,.10), transparent 55%),
+                  radial-gradient(680px 240px at 75% 0%, rgba(180,140,255,.10), transparent 58%);
+      opacity:.9;
+    }
+    .panelHeader{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background:rgba(10,12,24,.35);
+      position:relative;
+      z-index:1;
+    }
+    .panelHeader .title{font-size:13px; letter-spacing:.35px; color:var(--text); display:flex; gap:10px; align-items:center}
+    .panelHeader .title .dot{
+      width:8px; height:8px; border-radius:999px; background:var(--cyan);
+      box-shadow:0 0 16px rgba(78,231,255,.6);
+    }
+    .panelBody{padding:14px; position:relative; z-index:1;}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .grow{flex:1}
+    .muted{color:var(--muted)}
+    .small{font-size:12px}
+
+    input, select, textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(6,8,16,.55);
+      color:var(--text);
+      outline:none;
+    }
+    textarea{min-height:62px; resize:vertical}
+    input::placeholder, textarea::placeholder{color:rgba(170,183,230,.65)}
+
+    button{
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background:linear-gradient(180deg, rgba(28,36,80,.65), rgba(10,12,24,.55));
+      color:var(--text);
+      box-shadow: 0 10px 24px rgba(0,0,0,.35), var(--glow);
+      transition: transform .08s ease, filter .15s ease, box-shadow .15s ease;
+      user-select:none;
+      font-weight:640;
+      letter-spacing:.2px;
+      position:relative;
+      overflow:hidden;
+    }
+    button:hover{filter:brightness(1.06)}
+    button:active{transform:translateY(1px)}
+    button[disabled]{
+      opacity:.45;
+      cursor:not-allowed;
+      filter:saturate(.3);
+      box-shadow:none;
+    }
+    /* ripple */
+    button .rip{
+      position:absolute; border-radius:999px;
+      transform: translate(-50%,-50%);
+      background: radial-gradient(circle, rgba(255,255,255,.35), transparent 60%);
+      width:16px; height:16px;
+      opacity:.0;
+      pointer-events:none;
+      animation: rip .55s ease-out;
+    }
+    @keyframes rip{
+      from{opacity:.75; width:16px; height:16px}
+      to{opacity:0; width:220px; height:220px}
+    }
+
+    .btnRow{display:flex; gap:10px; flex-wrap:wrap}
+    .btnPrimary{
+      border-color: rgba(78,231,255,.35);
+      background:linear-gradient(180deg, rgba(78,231,255,.22), rgba(28,36,80,.55));
+    }
+    .btnDanger{
+      border-color: rgba(255,77,109,.35);
+      background:linear-gradient(180deg, rgba(255,77,109,.20), rgba(28,10,18,.35));
+    }
+    .btnOk{
+      border-color: rgba(65,243,163,.35);
+      background:linear-gradient(180deg, rgba(65,243,163,.18), rgba(10,24,18,.30));
+    }
+
+    .players{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:10px;
+    }
+    @media (max-width: 560px){
+      .players{grid-template-columns:1fr}
+    }
+    .pCard{
+      padding:12px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(10,12,24,.45);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+      position:relative;
+      overflow:hidden;
+      transition: transform .12s ease, border-color .15s ease, filter .15s ease;
+    }
+    .pCard:hover{transform: translateY(-1px); border-color: rgba(78,231,255,.18); filter: brightness(1.03)}
+    .pCard.me{border-color: rgba(78,231,255,.35); box-shadow: inset 0 0 0 1px rgba(78,231,255,.15), var(--glow)}
+    .pCard.turn{outline:2px solid rgba(255,211,106,.40); outline-offset:1px}
+    .pCard .name{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px}
+    .pCard .name b{font-size:13px}
+    .badge{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.25);
+      color:var(--muted);
+    }
+    .badge.pres{border-color:rgba(180,140,255,.35); color:var(--vio)}
+    .badge.off{border-color:rgba(255,77,109,.30); color:rgba(255,77,109,.9)}
+    .stats{display:flex; gap:8px; flex-wrap:wrap}
+    .stat{
+      display:flex; gap:6px; align-items:center;
+      padding:6px 8px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.22);
+      font-size:12px;
+      color:var(--muted);
+    }
+    .stat b{color:var(--text)}
+    .stat .k{opacity:.9}
+    .ring{
+      position:absolute; right:-40px; top:-40px;
+      width:140px; height:140px; border-radius:999px;
+      background:radial-gradient(circle at 30% 30%, rgba(78,231,255,.28), transparent 58%);
+      opacity:.8;
+      pointer-events:none;
+    }
+
+    /* --- Avatar / Portrait --- */
+    .pRow{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .avatar{
+      width:54px; height:54px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.14);
+      background:
+        radial-gradient(40px 40px at 30% 20%, rgba(255,255,255,.14), transparent 55%),
+        linear-gradient(180deg, rgba(20,26,56,.55), rgba(6,8,16,.35));
+      box-shadow: 0 10px 24px rgba(0,0,0,.35), 0 0 22px hsla(var(--ch,190), 90%, 70%, .10);
+      overflow:hidden;
+      position:relative;
+      flex:0 0 auto;
+    }
+    .avatar img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      transform: scale(1.03);
+      filter: saturate(1.05) contrast(1.05);
+    }
+    .avatar:after{
+      content:"";
+      position:absolute; inset:-1px;
+      pointer-events:none;
+      background:
+        radial-gradient(60px 40px at 20% 15%, hsla(var(--ch,190), 90%, 70%, .14), transparent 60%),
+        radial-gradient(80px 60px at 80% 85%, rgba(255,102,204,.08), transparent 60%);
+      mix-blend-mode: screen;
+    }
+    .avatarPh{
+      width:100%; height:100%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px;
+      color:rgba(234,240,255,.75);
+    }
+
+    .cards{display:flex; flex-wrap:wrap; gap:10px;}
+    .card{
+      width: calc(50% - 5px);
+      min-width: 240px;
+      flex:1;
+      padding:12px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(180deg, rgba(12,16,32,.70), rgba(9,10,18,.55));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      position:relative;
+      transition: transform .12s ease, border-color .15s ease, filter .15s ease;
+      will-change: transform;
+    }
+    .card:hover{transform: translateY(-2px); border-color: rgba(78,231,255,.22); filter: brightness(1.03)}
+    .card .top{display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .card .nm{font-weight:720; letter-spacing:.25px}
+    .card .meta{font-size:11px; color:var(--muted)}
+    .card .txt{margin-top:8px; font-size:12px; color:rgba(234,240,255,.92); line-height:1.35}
+    .tag{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.22);
+      color:var(--muted);
+    }
+    .tag.SUPPORT{border-color:rgba(78,231,255,.28); color:rgba(78,231,255,.95)}
+    .tag.ATTACK{border-color:rgba(255,77,109,.28); color:rgba(255,77,109,.95)}
+    .tag.MONEY{border-color:rgba(255,211,106,.28); color:rgba(255,211,106,.95)}
+    .tag.ALLY{border-color:rgba(180,140,255,.28); color:rgba(180,140,255,.95)}
+    .tag.COUP{border-color:rgba(255,102,204,.28); color:rgba(255,102,204,.95)}
+    .tag.VOTE{border-color:rgba(65,243,163,.28); color:rgba(65,243,163,.95)}
+    .tag.BLUFF{border-color:rgba(170,183,230,.25); color:rgba(170,183,230,.9)}
+
+    .section{margin-top:12px}
+    .hr{height:1px; background:rgba(255,255,255,.08); margin:12px 0}
+    .kv{display:flex; gap:10px; flex-wrap:wrap}
+    .kv .item{
+      flex:1;
+      min-width:180px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.20);
+    }
+    .kv .item .k{font-size:11px; color:var(--muted)}
+    .kv .item .v{margin-top:4px; font-weight:720}
+    .timer{
+      font-variant-numeric: tabular-nums;
+      font-size:12px;
+      color:var(--muted);
+      display:flex; gap:8px; align-items:center;
+    }
+    .bar{
+      width:120px; height:8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.25);
+      overflow:hidden;
+    }
+    .bar > i{
+      display:block; height:100%;
+      width:0%;
+      background:linear-gradient(90deg, rgba(78,231,255,.85), rgba(180,140,255,.85));
+      box-shadow: 0 0 18px rgba(78,231,255,.28);
+    }
+
+    .poolBar{ margin-top:10px; }
+    .poolBar .bar{ width:100%; height:10px;}
+    .poolBar .bar > i{
+      background:linear-gradient(90deg, rgba(255,211,106,.85), rgba(78,231,255,.85));
+      box-shadow: 0 0 20px rgba(255,211,106,.22);
+    }
+
+    .log{
+      max-height: 420px;
+      overflow:auto;
+      padding-right:6px;
+      scroll-behavior:smooth;
+    }
+    .log .line{
+      padding:9px 10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.18);
+      margin-bottom:8px;
+      font-size:12px;
+      color:rgba(234,240,255,.92);
+      line-height:1.35;
+      animation: pop .18s ease;
+      white-space: pre-wrap;
+    }
+    @keyframes pop{from{transform:translateY(4px); opacity:.65} to{transform:translateY(0); opacity:1}}
+    .hint{
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px dashed rgba(255,255,255,.14);
+      background:rgba(0,0,0,.16);
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    .modalMask{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.55);
+      display:none;
+      align-items:center; justify-content:center;
+      padding:18px;
+      z-index:99;
+    }
+    .modal{
+      width:min(720px, 100%);
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.12);
+      background:linear-gradient(180deg, rgba(20,26,56,.82), rgba(6,8,16,.75));
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(12px);
+      overflow:hidden;
+    }
+    .modalHead{padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.08); display:flex; align-items:center; justify-content:space-between}
+    .modalHead b{letter-spacing:.3px}
+    .modalBody{padding:14px 16px}
+    .modalFoot{padding:14px 16px; border-top:1px solid rgba(255,255,255,.08); display:flex; justify-content:flex-end; gap:10px}
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:11px;
+      padding:2px 6px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.25);
+      color:var(--muted);
+    }
+
+    /* --- Toast --- */
+    .toastWrap{
+      position:fixed;
+      right:14px; top:14px;
+      z-index:120;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      pointer-events:none;
+    }
+    .toast{
+      pointer-events:none;
+      min-width: 220px;
+      max-width: 360px;
+      padding:10px 12px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background:linear-gradient(180deg, rgba(20,26,56,.82), rgba(6,8,16,.72));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      animation: toastIn .18s ease;
+    }
+    @keyframes toastIn{from{transform:translateY(-6px); opacity:.55} to{transform:translateY(0); opacity:1}}
+    .toast .t{font-weight:750; font-size:12px}
+    .toast .d{margin-top:4px; font-size:12px; color:rgba(234,240,255,.9)}
+    .toast.ok{border-color:rgba(65,243,163,.32)}
+    .toast.err{border-color:rgba(255,77,109,.32)}
+    .toast.warn{border-color:rgba(255,211,106,.32)}
+
+    /* phase flash */
+    .phaseFlash{
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index:80;
+      opacity:0;
+      background:
+        radial-gradient(1200px 600px at 50% 20%, rgba(78,231,255,.12), transparent 60%),
+        radial-gradient(1000px 560px at 30% 90%, rgba(255,102,204,.10), transparent 62%);
+      transition: opacity .35s ease;
+    }
+    .phaseFlash.on{opacity:1}
+  </style>
+</head>
+
+<body class="noise">
+  <canvas id="fxCanvas"></canvas>
+  <div class="phaseFlash" id="phaseFlash"></div>
+
+  <div class="toastWrap" id="toastWrap"></div>
+
+  <div class="wrap">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>空壳之国 · 轻量互动版</h1>
+          <div class="sub">supportPool 稀缺经济 · 联盟链条 · 两类政变 · WS 原协议兼容</div>
+        </div>
+      </div>
+
+      <div class="pillrow">
+        <div class="pill"><span class="muted">连接</span> <b id="connState">未连接</b></div>
+        <div class="pill"><span class="muted">房间</span> <b id="roomPill">-</b></div>
+        <div class="pill"><span class="muted">你</span> <b id="mePill">-</b></div>
+        <div class="pill"><span class="muted">阶段</span> <b id="phasePill">-</b></div>
+        <div class="pill"><span class="muted">回合</span> <b id="turnPill">-</b></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="panel">
+        <div class="panelHeader">
+          <div class="title"><span class="dot"></span> 盘面</div>
+          <div class="timer">
+            <span id="timerText">--</span>
+            <span class="bar"><i id="timerBar"></i></span>
+            <span class="kbd">WS</span>
+          </div>
+        </div>
+        <div class="panelBody">
+
+          <div class="row">
+            <div class="grow">
+              <div class="kv">
+                <div class="item">
+                  <div class="k">议题</div>
+                  <div class="v" id="agendaName">-</div>
+                  <div class="small muted" id="agendaText" style="margin-top:6px; line-height:1.35">-</div>
+                </div>
+                <div class="item">
+                  <div class="k">危机</div>
+                  <div class="v" id="crisisNeed">-</div>
+                  <div class="small muted" id="crisisText" style="margin-top:6px; line-height:1.35">-</div>
+                </div>
+                <div class="item">
+                  <div class="k">胜利阈值 / 民意池</div>
+                  <div class="v"><span id="thr">-</span> / <span id="pool">-</span></div>
+                  <div class="poolBar">
+                    <div class="bar"><i id="poolBar"></i></div>
+                  </div>
+                  <div class="small muted" style="margin-top:6px; line-height:1.35" id="winRuleHint">
+                    选举冲线：<span class="kbd">S ≥ 阈值</span> 且 <span class="kbd">supportPool = 0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="row" style="align-items:flex-end">
+            <div class="grow">
+              <div class="small muted" style="margin-bottom:6px">玩家列表</div>
+              <div class="players" id="players"></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="hr"></div>
+            <div class="row">
+              <div class="grow">
+                <div class="small muted" style="margin-bottom:6px">你的手牌</div>
+                <div class="cards" id="hand"></div>
+                <div class="hint" id="handHint" style="margin-top:10px; display:none"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="panel">
+        <div class="panelHeader">
+          <div class="title"><span class="dot" style="background:var(--vio)"></span> 控制台</div>
+          <div class="small muted">尽量不改协议 · 只做 UI 包装</div>
+        </div>
+
+        <div class="panelBody">
+          <div class="row">
+            <div class="grow">
+              <label class="small muted">WS 地址</label>
+              <input id="wsUrl" placeholder="ws://localhost:3000" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="grow">
+              <label class="small muted">房间号 roomId</label>
+              <input id="roomId" placeholder="room1" />
+            </div>
+            <div class="grow">
+              <label class="small muted">昵称 name</label>
+              <input id="name" placeholder="玩家" />
+            </div>
+          </div>
+
+          <div class="btnRow">
+            <button class="btnPrimary" id="btnConnect">连接</button>
+            <button id="btnPing">刷新状态</button>
+            <button class="btnOk" id="btnStart">开始</button>
+            <button id="btnAddAI">+ AI</button>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="row">
+            <div class="grow">
+              <label class="small muted">声明标签（密谋阶段）</label>
+              <select id="declTag">
+                <option value="BLUFF">BLUFF 打烟雾弹</option>
+                <option value="SUPPORT">SUPPORT 拉支持</option>
+                <option value="ATTACK">ATTACK 搞对手</option>
+                <option value="MONEY">MONEY 搞筹码</option>
+                <option value="ALLY">ALLY 结盟/断盟</option>
+                <option value="COUP">COUP 准备/发动政变</option>
+                <option value="VOTE">VOTE 冲议题投票</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="grow">
+              <label class="small muted">声明文本</label>
+              <input id="declText" placeholder="（可选，最多60字）" />
+            </div>
+          </div>
+
+          <div class="btnRow">
+            <button id="btnSetDecl">提交声明</button>
+            <button id="btnAcceptAlliance" class="btnOk">接受联盟</button>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="row">
+            <div class="grow">
+              <label class="small muted">目标玩家（可选）</label>
+              <select id="targetSel"></select>
+            </div>
+          </div>
+
+          <div class="btnRow">
+            <button id="btnPlayFacedown" class="btnPrimary">打出暗置牌</button>
+            <button id="btnPrepCoup">准备政变（花1筹码）</button>
+            <button id="btnLaunchCoup" class="btnDanger">发动政变</button>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="row">
+            <div class="grow">
+              <label class="small muted">投票</label>
+              <div class="btnRow">
+                <button id="btnVoteYes" class="btnOk">YES</button>
+                <button id="btnVoteNo" class="btnDanger">NO</button>
+                <button id="btnVoteAbstain">ABSTAIN</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="grow">
+              <label class="small muted">危机贡献 / 政变贡献（筹码数）</label>
+              <input id="amt" type="number" min="1" max="10" value="1" />
+            </div>
+          </div>
+          <div class="btnRow">
+            <button id="btnCrisisContrib">危机贡献</button>
+            <button id="btnCoupContrib">政变贡献</button>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="row">
+            <div class="grow">
+              <label class="small muted">打反应牌（选择一张 REACTION）</label>
+              <select id="reactSel"></select>
+            </div>
+          </div>
+          <div class="btnRow">
+            <button id="btnPlayReaction">打出反应牌</button>
+          </div>
+
+          <!-- Avatar manager (Option 2 integrated) -->
+          <div class="hr"></div>
+
+          <div class="row">
+            <div class="grow">
+              <label class="small muted">立绘管理（本地保存，不改协议）</label>
+              <div class="row" style="margin-top:8px">
+                <div class="grow">
+                  <select id="avatarPid"></select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="grow">
+                  <input id="avatarUrl" placeholder="图片URL / 本地路径（例如 /img/1.png）" />
+                </div>
+              </div>
+              <div class="btnRow">
+                <button id="btnAvatarSet" class="btnOk">绑定立绘</button>
+                <button id="btnAvatarClear">清除该玩家立绘</button>
+                <button id="btnAvatarClearAll" class="btnDanger">清空全部</button>
+              </div>
+              <div class="hint" style="margin-top:10px">
+                推荐：用你自己部署的静态资源地址（同源最稳）。<br/>
+                注意：跨域图片如果服务器不允许，可能会加载失败（浏览器策略）。
+              </div>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="row">
+            <div class="grow">
+              <label class="small muted">聊天</label>
+              <input id="chat" placeholder="输入聊天内容（最多200字）" />
+            </div>
+          </div>
+          <div class="btnRow">
+            <button id="btnChat">发送</button>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="small muted" style="margin-bottom:8px">事件日志（增量追加，不闪屏）</div>
+          <div class="log" id="log"></div>
+
+          <div class="hint" style="margin-top:10px">
+            <div>提示：</div>
+            <div>1) 密谋阶段先点手牌里的「设为暗置」+「提交声明」</div>
+            <div>2) 行动阶段点「打出暗置牌」</div>
+            <div>3) 若出现联盟提案，可点「接受联盟」</div>
+            <div>4) 政变时用「政变贡献」或打反应牌</div>
+            <div style="margin-top:6px">（密谋阶段可点玩家卡片发起“质疑”）</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal -->
+  <div class="modalMask" id="modalMask">
+    <div class="modal">
+      <div class="modalHead">
+        <b id="modalTitle">选择目标/操作</b>
+        <button id="modalClose">关闭</button>
+      </div>
+      <div class="modalBody" id="modalBody"></div>
+      <div class="modalFoot">
+        <button id="modalOk" class="btnPrimary">确认</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  // --- WS state ---
+  let ws = null;
+  let roomId = "";
+  let playerId = "";
+  let pub = null;
+  let priv = null;
+
+  // --- timer sync ---
+  let serverOffset = 0; // ms
+  let timerTick = null;
+
+  // --- log incremental ---
+  let lastLogKey = "";
+  let lastLogLen = 0;
+  let suppressLogReset = false;
+
+  const wsUrlInput = $("wsUrl");
+  const roomIdInput = $("roomId");
+  const nameInput = $("name");
+
+  const connState = $("connState");
+  const roomPill = $("roomPill");
+  const mePill = $("mePill");
+  const phasePill = $("phasePill");
+  const turnPill = $("turnPill");
+
+  const agendaName = $("agendaName");
+  const agendaText = $("agendaText");
+  const crisisNeed = $("crisisNeed");
+  const crisisText = $("crisisText");
+  const thr = $("thr");
+  const pool = $("pool");
+  const poolBar = $("poolBar");
+  const winRuleHint = $("winRuleHint");
+
+  const playersEl = $("players");
+  const handEl = $("hand");
+  const handHint = $("handHint");
+  const logEl = $("log");
+
+  const targetSel = $("targetSel");
+  const reactSel = $("reactSel");
+
+  const timerText = $("timerText");
+  const timerBar = $("timerBar");
+
+  const phaseFlash = $("phaseFlash");
+  const toastWrap = $("toastWrap");
+
+  // Modal
+  const modalMask = $("modalMask");
+  const modalTitle = $("modalTitle");
+  const modalBody = $("modalBody");
+  const modalOk = $("modalOk");
+  const modalClose = $("modalClose");
+  let modalResolve = null;
+
+  // Avatar manager
+  const avatarPid = $("avatarPid");
+  const avatarUrl = $("avatarUrl");
+  const btnAvatarSet = $("btnAvatarSet");
+  const btnAvatarClear = $("btnAvatarClear");
+  const btnAvatarClearAll = $("btnAvatarClearAll");
+
+  function openModal({title, contentHTML}) {
+    modalTitle.textContent = title || "操作";
+    modalBody.innerHTML = contentHTML || "";
+    modalMask.style.display = "flex";
+    return new Promise((resolve) => modalResolve = resolve);
+  }
+  function closeModal(val) {
+    modalMask.style.display = "none";
+    if (modalResolve) modalResolve(val);
+    modalResolve = null;
+  }
+  modalClose.onclick = () => closeModal(null);
+  modalOk.onclick = () => closeModal(true);
+  modalMask.addEventListener("click", (e) => {
+    if (e.target === modalMask) closeModal(null);
+  });
+
+  // --- Toast ---
+  function toast(kind, title, detail, ttl=2600){
+    const div = document.createElement("div");
+    div.className = "toast " + (kind || "warn");
+    div.innerHTML = `<div class="t">${escapeHtml(title||"提示")}</div><div class="d">${escapeHtml(detail||"")}</div>`;
+    toastWrap.appendChild(div);
+    setTimeout(()=>{ div.style.opacity="0"; div.style.transform="translateY(-6px)"; }, Math.max(0, ttl - 350));
+    setTimeout(()=>{ try{toastWrap.removeChild(div)}catch{} }, ttl);
+  }
+
+  // --- Helpers ---
+  function tagClass(tag){
+    const ok = ["SUPPORT","ATTACK","MONEY","ALLY","COUP","VOTE","BLUFF"].includes(tag) ? tag : "BLUFF";
+    return ok;
+  }
+  function fmtPhase(p){
+    if (!p) return "-";
+    const map = {
+      LOBBY:"大厅", PLOTTING:"密谋", ACTION:"行动", REACTION:"反应",
+      VOTE:"投票", CRISIS:"危机", CLEANUP:"结算",
+      COUP_NEGOTIATION:"政变协商", COUP_REACTION:"政变反应", END:"终局"
+    };
+    return map[p] || p;
+  }
+  function canSend(){
+    return ws && ws.readyState === WebSocket.OPEN;
+  }
+  function send(obj){
+    if (!canSend()) return;
+    ws.send(JSON.stringify(obj));
+  }
+  function setConn(s){
+    connState.textContent = s;
+  }
+
+  function addRipple(btn, x, y){
+    const r = document.createElement("i");
+    r.className = "rip";
+    r.style.left = x + "px";
+    r.style.top = y + "px";
+    btn.appendChild(r);
+    setTimeout(()=>{ try{btn.removeChild(r)}catch{} }, 650);
+  }
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn || btn.disabled) return;
+    const rect = btn.getBoundingClientRect();
+    addRipple(btn, e.clientX - rect.left, e.clientY - rect.top);
+  }, {capture:true});
+
+  // --- Timer ---
+  function phaseDurationGuess(ph){
+    let dur = 30000;
+    if (ph === "PLOTTING") dur = 30000;
+    if (ph === "REACTION") dur = 10000;
+    if (ph === "VOTE") dur = 20000;
+    if (ph === "CRISIS") dur = 15000;
+    if (ph === "COUP_NEGOTIATION") dur = 30000;
+    if (ph === "COUP_REACTION") dur = 12000;
+    return dur;
+  }
+
+  function updateTimer(){
+    if (!pub) { timerText.textContent = "--"; timerBar.style.width="0%"; return; }
+    const endsAt = pub.phaseEndsAt;
+    if (!endsAt) { timerText.textContent = "∞"; timerBar.style.width="0%"; return; }
+
+    const nowServer = Date.now() + serverOffset;
+    const msLeft = Math.max(0, endsAt - nowServer);
+    const sec = Math.ceil(msLeft / 1000);
+    timerText.textContent = sec + "s";
+
+    const dur = phaseDurationGuess(pub.phase);
+    const pct = Math.max(0, Math.min(1, msLeft / dur));
+    timerBar.style.width = (pct * 100).toFixed(1) + "%";
+  }
+
+  function flashPhase(){
+    phaseFlash.classList.add("on");
+    setTimeout(()=>phaseFlash.classList.remove("on"), 380);
+  }
+
+  // --- Log incremental rendering ---
+  function appendLogLine(line){
+    const div = document.createElement("div");
+    div.className = "line";
+    div.textContent = line;
+    logEl.prepend(div);
+    while (logEl.children.length > 160) logEl.removeChild(logEl.lastChild);
+  }
+  function syncLogIncremental(){
+    if (!pub || !Array.isArray(pub.log)) return;
+
+    const arr = pub.log.slice(-140);
+    const len = arr.length;
+    const lastLine = len ? arr[len-1] : "";
+
+    const hardReset = (!lastLogKey && len>0) || (len < lastLogLen) || suppressLogReset;
+
+    if (hardReset){
+      suppressLogReset = false;
+      logEl.innerHTML = "";
+      [...arr].reverse().forEach(appendLogLine);
+      lastLogLen = len;
+      lastLogKey = lastLine;
+      return;
+    }
+
+    if (len === lastLogLen && lastLine === lastLogKey) return;
+
+    let idx = -1;
+    if (lastLogKey !== ""){
+      for (let i = len-1; i >= 0; i--){
+        if (arr[i] === lastLogKey) { idx = i; break; }
+      }
+    }
+    const start = idx >= 0 ? idx + 1 : Math.max(0, len - 10);
+    const newLines = arr.slice(start);
+
+    [...newLines].reverse().forEach(appendLogLine);
+
+    lastLogLen = len;
+    lastLogKey = lastLine;
+  }
+
+  // --- Avatar storage (local only, per room+pid) ---
+  const AVATAR_KEY_PREFIX = "kkzg_avatar_v1_";
+
+  function avatarStorageKey(rid, pid){
+    return AVATAR_KEY_PREFIX + (rid || "room") + "_" + (pid || "");
+  }
+  function getAvatar(rid, pid){
+    try{
+      return localStorage.getItem(avatarStorageKey(rid, pid)) || "";
+    }catch{ return ""; }
+  }
+  function setAvatar(rid, pid, url){
+    try{
+      if (!url) localStorage.removeItem(avatarStorageKey(rid, pid));
+      else localStorage.setItem(avatarStorageKey(rid, pid), url);
+    }catch{}
+  }
+  function clearAllAvatars(rid){
+    try{
+      const prefix = AVATAR_KEY_PREFIX + (rid || "room") + "_";
+      const del = [];
+      for (let i=0;i<localStorage.length;i++){
+        const k = localStorage.key(i);
+        if (k && k.startsWith(prefix)) del.push(k);
+      }
+      del.forEach(k => localStorage.removeItem(k));
+    }catch{}
+  }
+
+  function refreshAvatarSelect(){
+    if (!avatarPid) return;
+    avatarPid.innerHTML = "";
+    const o0 = document.createElement("option");
+    o0.value = "";
+    o0.textContent = "（选择玩家）";
+    avatarPid.appendChild(o0);
+
+    (pub?.players || []).forEach(p => {
+      const o = document.createElement("option");
+      o.value = p.id;
+      const has = getAvatar(roomId, p.id) ? "✅" : "⬜";
+      o.textContent = `${has} ${p.name} (${shortId(p.id)})`;
+      avatarPid.appendChild(o);
+    });
+  }
+
+  btnAvatarSet.onclick = () => {
+    const pid = avatarPid.value;
+    if (!pid) return toast("warn","缺少选择","请先选择一个玩家",1600);
+    const url = (avatarUrl.value || "").trim();
+    if (!url) return toast("warn","缺少URL","请输入图片URL或本地路径",1700);
+    setAvatar(roomId, pid, url);
+    toast("ok","立绘已绑定", `目标：${pid}`, 1400);
+    refreshAvatarSelect();
+    render();
+  };
+
+  btnAvatarClear.onclick = () => {
+    const pid = avatarPid.value;
+    if (!pid) return toast("warn","缺少选择","请先选择一个玩家",1600);
+    setAvatar(roomId, pid, "");
+    toast("ok","已清除立绘", `目标：${pid}`, 1400);
+    refreshAvatarSelect();
+    render();
+  };
+
+  btnAvatarClearAll.onclick = () => {
+    clearAllAvatars(roomId);
+    toast("warn","已清空全部立绘", `roomId=${roomId}`, 1600);
+    refreshAvatarSelect();
+    render();
+  };
+
+  avatarPid.addEventListener("change", () => {
+    const pid = avatarPid.value;
+    if (!pid) { avatarUrl.value = ""; return; }
+    avatarUrl.value = getAvatar(roomId, pid) || "";
+  });
+
+  // --- Rendering ---
+  let lastPhase = "";
+  function render(){
+    roomPill.textContent = roomId || "-";
+    mePill.textContent = playerId || "-";
+
+    if (!pub){
+      phasePill.textContent = "-";
+      turnPill.textContent = "-";
+      agendaName.textContent = "-";
+      agendaText.textContent = "-";
+      crisisNeed.textContent = "-";
+      crisisText.textContent = "-";
+      thr.textContent = "-";
+      pool.textContent = "-";
+      poolBar.style.width = "0%";
+      playersEl.innerHTML = "";
+      handEl.innerHTML = "";
+      refreshAvatarSelect();
+      return;
+    }
+
+    const phase = pub.phase || "";
+    if (phase && phase !== lastPhase){
+      flashPhase();
+      lastPhase = phase;
+      toast("warn", "阶段切换", `进入：${fmtPhase(phase)}`, 1400);
+    }
+
+    phasePill.textContent = fmtPhase(phase);
+    turnPill.textContent = pub.turn ? `${pub.turn}` : "-";
+
+    thr.textContent = pub.electionThreshold ?? "-";
+    const sp = (pub.supportPool ?? 0);
+    pool.textContent = sp;
+
+    const maxPoolGuess = Math.max(12, (pub.players?.length||4) + 8);
+    const pct = Math.max(0, Math.min(1, sp / maxPoolGuess));
+    poolBar.style.width = (pct * 100).toFixed(1) + "%";
+
+    winRuleHint.innerHTML = `选举冲线：<span class="kbd">S ≥ 阈值</span> 且 <span class="kbd">supportPool = 0</span>`;
+
+    if (pub.agenda){
+      agendaName.textContent = pub.agenda.name;
+      agendaText.textContent = pub.agenda.text;
+      crisisNeed.textContent = "目标：" + (pub.agenda.crisisNeed ?? "-");
+      crisisText.textContent = pub.agenda.crisisText ?? "-";
+    }else{
+      agendaName.textContent = "-";
+      agendaText.textContent = "-";
+      crisisNeed.textContent = "-";
+      crisisText.textContent = "-";
+    }
+
+    // Players
+    playersEl.innerHTML = "";
+    const presId = pub.presidentId;
+    const curId = pub.currentPlayerId;
+    (pub.players || []).forEach(p => {
+      const div = document.createElement("div");
+      div.className = "pCard" +
+        (p.id === playerId ? " me" : "") +
+        (p.id === curId && pub.phase === "ACTION" ? " turn" : "");
+      div.dataset.pid = p.id;
+
+      const av = getAvatar(roomId, p.id);
+
+      div.innerHTML = `
+        <div class="ring"></div>
+
+        <div class="pRow">
+          <div class="avatar" title="立绘（本地绑定）">
+            ${av
+              ? `<img src="${escapeHtml(av)}" alt="avatar" onerror="this.remove(); this.parentNode.innerHTML='<div class=\\'avatarPh\\'>NO IMG</div>';" />`
+              : `<div class="avatarPh">NO IMG</div>`
+            }
+          </div>
+
+          <div class="grow" style="min-width:0">
+            <div class="name">
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+                <b style="text-shadow:0 0 18px hsla(var(--ch),95%,70%,.18)">${escapeHtml(p.name)}</b>
+                ${p.id===presId ? `<span class="badge pres">总统</span>` : ``}
+                ${p.exposed ? `<span class="badge" style="border-color:rgba(255,102,204,.35); color:rgba(255,102,204,.95)">暴露</span>` : ``}
+                ${p.untrusted>0 ? `<span class="badge" title="不可信">${"不可信+"+p.untrusted}</span>` : ``}
+                ${p.allianceWith ? `<span class="badge" title="盟友">${"盟"+shortId(p.allianceWith)}</span>` : ``}
+              </div>
+              <span class="badge ${p.online?``:`off`}">${p.online ? "在线" : "离线"}</span>
+            </div>
+
+            <div class="stats">
+              <div class="stat"><span class="k">S</span><b>${p.S}</b></div>
+              <div class="stat"><span class="k">T</span><b>${p.T}</b></div>
+              <div class="stat"><span class="k">M</span><b>${p.M}</b></div>
+              <div class="stat"><span class="k">W</span><b>${p.coupW||0}</b></div>
+            </div>
+
+            ${pub.phase==="PLOTTING" && p.id!==playerId ? `<div class="small muted" style="margin-top:10px">点此可质疑</div>` : ``}
+          </div>
+        </div>
+      `;
+      playersEl.appendChild(div);
+    });
+
+    // Target select
+    targetSel.innerHTML = "";
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = "（自动/默认）";
+    targetSel.appendChild(opt0);
+    (pub.players || []).forEach(p => {
+      if (p.id === playerId) return;
+      const o = document.createElement("option");
+      o.value = p.id;
+      o.textContent = `${p.name} (${shortId(p.id)})`;
+      targetSel.appendChild(o);
+    });
+
+    // Hand
+    handEl.innerHTML = "";
+    const my = priv?.me;
+    if (!my){
+      handHint.style.display = "block";
+      handHint.textContent = "尚未收到私密状态（private）。请点“刷新状态”或检查连接。";
+    }else{
+      const hand = my.hand || [];
+      handHint.style.display = hand.length ? "none" : "block";
+      if (!hand.length) handHint.textContent = "你目前没有手牌（或还没开始）。";
+
+      // Reaction list
+      reactSel.innerHTML = "";
+      const r0 = document.createElement("option");
+      r0.value = "";
+      r0.textContent = "（选择 REACTION 牌）";
+      reactSel.appendChild(r0);
+
+      hand.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          <div class="top">
+            <div>
+              <div class="nm">${escapeHtml(c.name)}</div>
+              <div class="meta">${escapeHtml(c.type)} · <span class="tag ${tagClass(c.tag)}">${escapeHtml(c.tag)}</span></div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
+              <span class="badge">${c.id}</span>
+              <button data-act="setfacedown" data-id="${c.id}" style="padding:8px 10px;border-radius:12px">设为暗置</button>
+            </div>
+          </div>
+          <div class="txt">${escapeHtml(c.text || "")}</div>
+          <div class="row" style="margin-top:10px; justify-content:space-between">
+            <span class="small muted">tag: ${escapeHtml(c.tag)} · type: ${escapeHtml(c.type)}</span>
+            <button data-act="quickplay" data-id="${c.id}" style="padding:8px 10px;border-radius:12px" ${pub.phase!=="ACTION" ? "disabled":""}>
+              直接打出
+            </button>
+          </div>
+        `;
+        handEl.appendChild(div);
+
+        if (c.type === "REACTION"){
+          const o = document.createElement("option");
+          o.value = c.id;
+          o.textContent = `${c.name} (${c.id})`;
+          reactSel.appendChild(o);
+        }
+      });
+
+      // facedown hint
+      const fd = my.facedownId;
+      if (fd){
+        handHint.style.display = "block";
+        handHint.innerHTML = `当前暗置：<span class="kbd">${fd}</span>。行动阶段点 <span class="kbd">打出暗置牌</span>。`;
+      }
+    }
+
+    // log incremental
+    syncLogIncremental();
+
+    // refresh avatar select (needs pub.players)
+    refreshAvatarSelect();
+
+    updateButtons();
+    updateTimer();
+  }
+
+  function updateButtons(){
+    const phase = pub?.phase;
+    const my = priv?.me;
+    const ended = (phase === "END");
+
+    const baseCan = canSend() && !ended;
+
+    $("btnStart").disabled = !canSend() || ended;
+    $("btnAddAI").disabled = !canSend() || ended;
+    $("btnPing").disabled = !canSend();
+    $("btnSetDecl").disabled = !(baseCan && phase === "PLOTTING");
+    $("btnPlayFacedown").disabled = !(baseCan && phase === "ACTION" && pub?.currentPlayerId === playerId && (my?.facedownId));
+    $("btnPrepCoup").disabled = !(baseCan && phase === "ACTION" && pub?.currentPlayerId === playerId);
+    $("btnLaunchCoup").disabled = !(baseCan && phase === "ACTION" && pub?.currentPlayerId === playerId);
+    $("btnAcceptAlliance").disabled = !(baseCan && phase === "REACTION" && pub?.allianceOffer && pub?.allianceOffer.toId === playerId);
+
+    $("btnVoteYes").disabled = !(baseCan && phase === "VOTE");
+    $("btnVoteNo").disabled = !(baseCan && phase === "VOTE");
+    $("btnVoteAbstain").disabled = !(baseCan && phase === "VOTE");
+
+    $("btnCrisisContrib").disabled = !(baseCan && phase === "CRISIS");
+    $("btnCoupContrib").disabled = !(baseCan && (phase === "COUP_NEGOTIATION" || phase === "COUP_REACTION"));
+
+    $("btnPlayReaction").disabled = !(baseCan && (phase === "REACTION" || phase === "COUP_NEGOTIATION" || phase === "COUP_REACTION"));
+
+    $("btnChat").disabled = !canSend();
+  }
+
+  // --- Actions (WS) ---
+  function wsJoin(){
+    if (!roomId) return;
+    const name = (nameInput.value || "玩家").trim();
+    send({type:"join", roomId, name});
+  }
+  function wsAddAI(){ send({type:"add_ai", roomId, count:1}); }
+  function wsStart(){ send({type:"start", roomId}); }
+  function wsPing(){ send({type:"ping_state", roomId}); }
+  function wsSetFacedown(cardId){ send({type:"plot_set_facedown", roomId, cardId}); }
+  function wsSetDecl(){
+    send({
+      type:"plot_set_declaration",
+      roomId,
+      tag: $("declTag").value,
+      text: ($("declText").value || "").slice(0,60),
+    });
+    toast("ok","声明已发送","等待密谋阶段结束…",1400);
+  }
+  function wsChallenge(targetId){ send({type:"challenge", roomId, targetId}); }
+  function wsAction(actionKey, payload){ send({type:"action", roomId, actionKey, payload: payload || {}}); }
+  function wsVote(choice){ send({type:"vote", roomId, choice}); }
+  function wsCrisisContrib(amount){ send({type:"crisis_contribute", roomId, amount}); }
+  function wsCoupContrib(amount){ send({type:"coup_contribute", roomId, amount}); }
+  function wsReaction(cardId){ send({type:"reaction", roomId, cardId}); }
+  function wsAcceptAlliance(){ send({type:"accept_alliance", roomId}); }
+  function wsChat(text){ send({type:"chat", roomId, text}); }
+
+  // --- UI wire ---
+  $("btnConnect").onclick = () => {
+    const url = (wsUrlInput.value || "").trim() || `ws://${location.hostname}:3000`;
+    roomId = (roomIdInput.value || "room1").trim() || "room1";
+    $("roomPill").textContent = roomId;
+    connect(url);
+  };
+  $("btnAddAI").onclick = wsAddAI;
+  $("btnStart").onclick = wsStart;
+  $("btnPing").onclick = wsPing;
+  $("btnSetDecl").onclick = wsSetDecl;
+  $("btnAcceptAlliance").onclick = wsAcceptAlliance;
+
+  $("btnPlayFacedown").onclick = () => {
+    const targetId = targetSel.value || null;
+    wsAction("PLAY_FACEDOWN", { targetId });
+  };
+  $("btnPrepCoup").onclick = () => wsAction("PREP_COUP", {});
+  $("btnLaunchCoup").onclick = () => wsAction("LAUNCH_COUP", {});
+  $("btnVoteYes").onclick = () => wsVote("YES");
+  $("btnVoteNo").onclick = () => wsVote("NO");
+  $("btnVoteAbstain").onclick = () => wsVote("ABSTAIN");
+
+  $("btnCrisisContrib").onclick = () => wsCrisisContrib(Number($("amt").value || 1));
+  $("btnCoupContrib").onclick = () => wsCoupContrib(Number($("amt").value || 1));
+
+  $("btnPlayReaction").onclick = () => {
+    const cid = reactSel.value;
+    if (!cid) return toast("warn","缺少选择","请先选择一张 REACTION 牌",1600);
+    wsReaction(cid);
+  };
+
+  $("btnChat").onclick = () => {
+    const t = ($("chat").value || "").trim();
+    if (!t) return;
+    wsChat(t.slice(0,200));
+    $("chat").value = "";
+  };
+
+  // Hand click delegation
+  handEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    const act = btn.dataset.act;
+    const cid = btn.dataset.id;
+    if (!act || !cid) return;
+
+    if (act === "setfacedown"){
+      if (pub?.phase !== "PLOTTING"){
+        toast("warn","只能在密谋设暗置","请等待下一回合密谋阶段",1700);
+        return;
+      }
+      wsSetFacedown(cid);
+      toast("ok","已设为暗置",`暗置牌：${cid}`,1300);
+    }
+    if (act === "quickplay"){
+      (async () => {
+        if (!pub || pub.phase !== "ACTION") return;
+        if (pub.currentPlayerId !== playerId) return toast("warn","还没轮到你","当前不能出牌",1500);
+        await openModal({
+          title:"协议限制：行动阶段不能换暗置",
+          contentHTML:`<div class="hint">
+            服务器协议中 <span class="kbd">plot_set_facedown</span> 仅允许在 <b>密谋阶段</b> 使用。<br/>
+            正确流程：<b>密谋阶段</b> 先点“设为暗置”，<b>行动阶段</b> 点“打出暗置牌”。<br/><br/>
+            （如果你希望行动阶段任意出牌，需要扩展后端协议，不建议为了轻量版破坏兼容性。）
+          </div>`
+        });
+        closeModal(null);
+      })();
+    }
+  });
+
+  // Players click: challenge
+  playersEl.addEventListener("click", async (e) => {
+    const el = e.target.closest(".pCard");
+    if (!el || !pub) return;
+    const pid = el.dataset.pid;
+    if (!pid || pid === playerId) return;
+
+    if (pub.phase === "PLOTTING"){
+      const pName = (pub.players.find(x=>x.id===pid)?.name) || pid;
+      const ok = await openModal({
+        title:"发起质疑？",
+        contentHTML:`<div class="hint">
+          你将质疑 <b>${escapeHtml(pName)}</b>。<br/>
+          需要你与对方各有 ≥1 筹码，双方各押 1 进入争议池。<br/><br/>
+          点击“确认”发送 <span class="kbd">challenge</span>。
+        </div>`
+      });
+      if (ok) {
+        wsChallenge(pid);
+        toast("warn","已发起质疑",`目标：${pName}`,1600);
+      }
+      closeModal(null);
+    }
+  });
+
+  // --- Connect ---
+  function connect(url){
+    if (ws) { try { ws.close(); } catch {} ws = null; }
+    setConn("连接中…");
+    toast("warn","连接中",url,1400);
+
+    ws = new WebSocket(url);
+
+    ws.onopen = () => {
+      setConn("已连接");
+      toast("ok","已连接","正在加入房间…",1300);
+
+      roomId = (roomIdInput.value || "room1").trim() || "room1";
+      playerId = "";
+      pub = null; priv = null;
+
+      suppressLogReset = true;
+      lastLogKey = "";
+      lastLogLen = 0;
+
+      wsJoin();
+
+      if (timerTick) clearInterval(timerTick);
+      timerTick = setInterval(updateTimer, 180);
+    };
+
+    ws.onmessage = (ev) => {
+      let msg = null;
+      try { msg = JSON.parse(ev.data); } catch { return; }
+      if (!msg || !msg.type) return;
+
+      if (msg.type === "error"){
+        toast("err","服务器错误", msg.message || "未知错误", 2600);
+        return;
+      }
+
+      if (msg.type === "joined"){
+        playerId = msg.playerId || "";
+        pub = msg.state || pub;
+
+        suppressLogReset = true;
+        render();
+
+        toast("ok","加入成功", "playerId=" + playerId, 1700);
+        wsPing();
+        return;
+      }
+
+      if (msg.type === "state"){
+        const incoming = msg.state || null;
+        if (incoming){
+          if (incoming.phaseEndsAt){
+            const guessOffset = (incoming.phaseEndsAt - (Date.now() + serverOffset));
+            serverOffset += guessOffset * 0.15;
+            serverOffset = Math.max(-8000, Math.min(8000, serverOffset));
+          }
+          pub = incoming;
+          render();
+        }
+        return;
+      }
+
+      if (msg.type === "private"){
+        priv = msg.state || priv;
+        render();
+        return;
+      }
+    };
+
+    ws.onclose = () => {
+      setConn("已断开");
+      updateButtons();
+      if (timerTick) clearInterval(timerTick);
+      timerText.textContent = "--";
+      timerBar.style.width = "0%";
+      toast("warn","连接断开","你可以重新连接",2000);
+    };
+
+    ws.onerror = () => {
+      toast("err","WS 错误","请检查地址/端口/反代",2600);
+    };
+  }
+
+  // --- Misc ---
+  function escapeHtml(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function shortId(id){
+    const s = String(id||"");
+    if (s.length <= 6) return s;
+    return s.slice(-4);
+  }
+
+  // --- FX Canvas: star particles ---
+  const cvs = $("fxCanvas");
+  const ctx = cvs.getContext("2d", {alpha:true});
+  let W = 0, H = 0, dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  let particles = [];
+  function resize(){
+    W = window.innerWidth; H = window.innerHeight;
+    cvs.width = Math.floor(W * dpr);
+    cvs.height = Math.floor(H * dpr);
+    cvs.style.width = W + "px";
+    cvs.style.height = H + "px";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    const count = Math.floor((W*H) / 28000);
+    particles = new Array(Math.max(32, Math.min(120, count))).fill(0).map(()=>spawn());
+  }
+  function spawn(){
+    return {
+      x: Math.random()*W,
+      y: Math.random()*H,
+      r: Math.random()*1.6 + 0.4,
+      a: Math.random()*0.35 + 0.08,
+      vx: (Math.random()*2-1) * 0.08,
+      vy: (Math.random()*2-1) * 0.06,
+      tw: Math.random()*Math.PI*2,
+      c: Math.random()<0.5 ? "78,231,255" : (Math.random()<0.66 ? "180,140,255" : "255,102,204")
+    };
+  }
+  function step(){
+    if (!ctx) return;
+    ctx.clearRect(0,0,W,H);
+
+    ctx.fillStyle = "rgba(0,0,0,.08)";
+    ctx.fillRect(0,0,W,H);
+
+    for (const p of particles){
+      p.tw += 0.02 + p.r*0.006;
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < -40) p.x = W+40;
+      if (p.x > W+40) p.x = -40;
+      if (p.y < -40) p.y = H+40;
+      if (p.y > H+40) p.y = -40;
+
+      const pulse = (Math.sin(p.tw)*0.5+0.5);
+      const alpha = p.a * (0.55 + pulse*0.7);
+
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(${p.c},${alpha})`;
+      ctx.arc(p.x, p.y, p.r*(0.85 + pulse*0.35), 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    requestAnimationFrame(step);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+  requestAnimationFrame(step);
+
+  // Defaults
+  wsUrlInput.value = `ws://${location.hostname}:3000`;
+  roomIdInput.value = "room1";
+  nameInput.value = "玩家";
+  updateButtons();
+  refreshAvatarSelect();
+
+})();
+</script>
+</body>
+</html>
